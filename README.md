@@ -2,6 +2,7 @@
 
 This is Pisacha Wichianchan's final project for University of Michigan's SI 507 (Winter 2020).
 
+## Getting Started
 **Data source:** https://livingwage.mit.edu/states/26/locations
 
 **About:** The program obtains data on living wages and necessary expenses across Michigan's counties and metropolitan statistical areas (MSAs) from the MIT​ Living Wage Calculator.
@@ -12,7 +13,7 @@ This is Pisacha Wichianchan's final project for University of Michigan's SI 507 
 
 **Required pip installation:** Including but not limited to beautifulsoup4, requests, sqlite, plotly, and PrettyTable.
 
-**How to interact with the program:**
+## How to interact with the program:
 1) In your terminal, go to the folder in which the program file (i.e. living_wage.py) is in.
 2) Type in "python3 living_wage.py" to initiate the program.
 3) The program will generates a welcome message that describes the program's intent. Enter anything to continue or "exit" to leave the program.
