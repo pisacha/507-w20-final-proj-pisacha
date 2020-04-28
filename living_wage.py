@@ -16,7 +16,6 @@ import sys # to use sys.exit()
 import sqlite3
 from prettytable import PrettyTable
 import plotly.graph_objs as go
-import numpy as np
 
 
 ##############################################
@@ -38,7 +37,7 @@ FIPS_AREA_LIST = []
 ############# classes & objects ##############
 ##############################################
 class Area:
-    '''either a county or a metropolitan statistical area (MSA) in Michigan
+    ''' Either a county or a metropolitan statistical area (MSA) in Michigan.
 
     Instance Attributes
     -------------------
@@ -70,17 +69,89 @@ class Area:
 
 
 ##############################################
+############### cache functions ##############
+##############################################
+def open_cache():
+    ''' Opens the cache file if it exists and loads the JSON into the CACHE_DICT dictionary.
+    If the cache file doesn't exist, creates a new cache dictionary.
+    
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    dict
+        The opened cache
+    '''
+    try:
+        cache_file = open(CACHE_FILENAME, 'r')
+        cache_contents = cache_file.read()
+        cache_dict = json.loads(cache_contents)
+        cache_file.close()
+    except:
+        cache_dict = {}
+    return cache_dict
+
+
+def save_cache(cache_dict):
+    ''' Saves the current state of the cache to disk.
+    
+    Parameters
+    ----------
+    cache_dict: dict
+        The dictionary to save
+    
+    Returns
+    -------
+    None
+    '''
+    dumped_json_cache = json.dumps(cache_dict)
+    cache_file = open(CACHE_FILENAME,"w")
+    cache_file.write(dumped_json_cache)
+    cache_file.close()
+
+
+def make_request_with_cache(url, cache_dict):
+    ''' Checks the cache for a saved result for this baseurl+params:values combo. 
+    If the result is found, returns it. Otherwise sends a new request, saves it, then returns it.
+    
+    Parameters
+    ----------
+    url: string
+        The URL with the data that you want to access
+    cache_dict: dict
+        A dictionary of param:value pairs
+    
+    Returns
+    -------
+    dict
+        the results of the query as a dictionary loaded from cache JSON
+    '''
+    if (url in cache_dict.keys()):
+        # print(f"CURRENTLY USING CACHE: {url}")
+        return cache_dict[url]
+    else:
+        # print(f"CURRENTLY FETCHING: {url}")
+        time.sleep(random.randint(5,10))
+        response = requests.get(url)
+        cache_dict[url] = response.text
+        save_cache(cache_dict)
+        return cache_dict[url]
+
+
+##############################################
 ################# instances ##################
 ##############################################
 def get_area_instance(specific_location_url):
-    ''' Make an instances from the area URL.
+    ''' Makes an instance from an area URL.
     
     Parameters
     ----------
     specific_location_url: string
-        Thr URL for a county or an MSA in the Michigan page of 
-        the MIT Living Wage website, 
-        i.e. https://livingwage.mit.edu/states/26/locations
+        Thr URL for a county or an MSA in the Michigan page of the MIT Living Wage website,
+        e.g. https://livingwage.mit.edu/counties/26161 for Washtenaw County or 
+        https://livingwage.mit.edu/metros/11460 for Ann Arbor, MI MSA
     
     Returns
     -------
@@ -108,14 +179,14 @@ def get_area_instance(specific_location_url):
 
 
 def get_areas_for_state(specific_location_url):
-    ''' Make a list of area instances from a state URL.
+    ''' Makes a list of area instances.
     
     Parameters
     ----------
     specific_location_url: string
-        Thr URL for a county or an MSA in the Michigan page of 
-        the MIT Living Wage website, 
-        i.e. https://livingwage.mit.edu/states/26/locations
+        Thr URL for a county or an MSA in the Michigan page of the MIT Living Wage website,
+        e.g. https://livingwage.mit.edu/counties/26161 for Washtenaw County or 
+        https://livingwage.mit.edu/metros/11460 for Ann Arbor, MI MSA
     
     Returns
     -------
@@ -134,8 +205,8 @@ def get_areas_for_state(specific_location_url):
 ################ scrape urls #################
 ##############################################
 def build_county_url_dict():
-    ''' Make a dictionary that maps county name to county page url from 
-    the state-specific page (e.g. Michigan) of the MIT Living Wage website
+    ''' Makes a dictionary that maps county name to county page url from 
+    the state-specific page (i.e. Michigan) of the MIT Living Wage website.
 
     Parameters
     ----------
@@ -145,7 +216,7 @@ def build_county_url_dict():
     -------
     dict
         key is a county name and value is the url
-        e.g. {'washtenaw':'https://livingwage.mit.edu/counties/26161', ...}
+        e.g. {'washtenaw county':'https://livingwage.mit.edu/counties/26161', ...}
     '''
     county_url_dict = {}
 
@@ -174,8 +245,8 @@ def build_county_url_dict():
 
 
 def build_msa_url_dict():
-    ''' Make a dictionary that maps metropolitan statistical area (MSA) name to MSA page 
-    url from the state-specific page (e.g. Michigan) of the MIT Living Wage website
+    ''' Makes a dictionary that maps metropolitan statistical area (MSA) name 
+    to MSA page url from the state-specific page (i.e. Michigan) of the MIT Living Wage website.
 
     Parameters
     ----------
@@ -214,8 +285,8 @@ def build_msa_url_dict():
 
 
 def build_combined_dict():
-    ''' Make a dictionary that maps names of counties and metropolitan statistical areas (MSAs) 
-    to respective county or MSA page url from the state-specific page (e.g. Michigan) of the 
+    ''' Makes a dictionary that maps the name of each county/ MSA to its 
+    respective area url from the state-specific page (i.e. Michigan) of the 
     MIT Living Wage website
 
     Parameters
@@ -226,7 +297,7 @@ def build_combined_dict():
     -------
     dict
         key is a location name (either county or MSA) and value is the url
-        e.g. {'washtenaw':'https://livingwage.mit.edu/counties/26161', ...,
+        e.g. {'washtenaw county':'https://livingwage.mit.edu/counties/26161', ...,
         'ann arbor, mi': 'https://livingwage.mit.edu/metros/11460', ...} 
     '''
     combined_url_dict = {}
@@ -245,26 +316,26 @@ def build_combined_dict():
 ########## scrape data from tables ###########
 ##############################################
 def scrape_wages_tables(specific_location_url):
-    '''Scrapes wage data for each family composition in a certain county or MSA
+    ''' Scrapes wage data for each family composition in a certain county or MSA.
 
     Parameters
     ----------
     specific_location_url: string
-        Thr URL for a county or an MSA in the Michigan page of 
-        the MIT Living Wage website, 
-        i.e. https://livingwage.mit.edu/states/26/locations
+        Thr URL for a county or an MSA in the Michigan page of the MIT Living Wage website,
+        e.g. https://livingwage.mit.edu/counties/26161 for Washtenaw County or 
+        https://livingwage.mit.edu/metros/11460 for Ann Arbor, MI MSA
 
     Returns
     -------
     nested dict
-        key is the number of adults 
+        main key is the number of adults
             (i.e. 'one adult', 'two adults (one working)', 'two adults (both working))
-        value is number of children
+        main value is the number of children
             (i.e. '0 children', '1 child', '2 children', '3 children')
-        nested key is type of wage
+        nested key is the type of wages
             (i.e. 'living wage', 'poverty wage', 'minimum wage')
-        nested value is wage values
-            (e.g. '$39.05', '$12.38', '$9.45')
+        nested value is the wage values in a float type in Python but consider them USD
+            (e.g. '39.05', '12.38', '9.45')
     '''
     ################ Make the soup for location page ################
     ######## e.g. https://livingwage.mit.edu/counties/26161 #########
@@ -401,8 +472,8 @@ def scrape_wages_tables(specific_location_url):
 
 
 def match_location_names_to_wages_dict():
-    '''Scrapes wage data for each family composition in all counties and MSAs in a state
-    and add the name of each county or MSA as the main key
+    ''' Scrapes wage data for each family composition in all counties and MSAs 
+    in a state and adds the name of each county or MSA as the main key.
 
     Parameters
     ----------
@@ -412,15 +483,17 @@ def match_location_names_to_wages_dict():
     -------
     nested dict
         main key is the area (either county or MSA)
+            (e.g. 'washtenaw county' or 'ann arbor, mi')
+
         values of each main key are as follows:
-            nested key no. 1 is the number of adults 
+            first nested key is the number of adults
                 (i.e. 'one adult', 'two adults (one working)', 'two adults (both working))
-            nested value no. 1 is number of children
+            first nested value is the number of children
                 (i.e. '0 children', '1 child', '2 children', '3 children')
-            nested key no. 2 is type of wage
+            second nested key is the type of wages
                 (i.e. 'living wage', 'poverty wage', 'minimum wage')
-            nested value no. 2 is wage values
-                (e.g. '$39.05', '$12.38', '$9.45')
+            second nested value is the wage values in a float type in Python but consider them USD
+                (e.g. '39.05', '12.38', '9.45')
     '''
     ## add area names to complete the dictionary
     combined_url_dict = build_combined_dict()
@@ -433,24 +506,26 @@ def match_location_names_to_wages_dict():
 
 
 def scrape_expenses_tables(specific_location_url):
-    '''Scrapes expenses data for each family composition in a certain county or MSA
+    ''' Scrapes expense data for each family composition in a certain county or MSA.
 
     Parameters
     ----------
     specific_location_url: string
-        Thr URL for a county or an MSA in https://livingwage.mit.edu/
+        Thr URL for a county or an MSA in the Michigan page of the MIT Living Wage website,
+        e.g. https://livingwage.mit.edu/counties/26161 for Washtenaw County or 
+        https://livingwage.mit.edu/metros/11460 for Ann Arbor, MI MSA
 
     Returns
     -------
-    nested dict????????
-        key is the number of adults 
+    nested dict
+        main key is the number of adults
             (i.e. 'one adult', 'two adults (one working)', 'two adults (both working))
-        value is number of children
+        main value is the number of children
             (i.e. '0 children', '1 child', '2 children', '3 children')
-        nested key is type of wage
-            (i.e. 'living wage', 'poverty wage', 'minimum wage')
-        nested value is wage values
-            (e.g. '$39.05', '$12.38', '$9.45')
+        nested key is the type of expense
+            (i.e. 'required annual income before taxes')
+        nested value is the expense values in a float format in Python but consider it USD
+            (e.g. '27672', '52942', '64448', '81216')
     '''
     ################ Make the soup for location page ################
     url_text = make_request_with_cache(specific_location_url, CACHE_DICT)
@@ -523,8 +598,8 @@ def scrape_expenses_tables(specific_location_url):
 
 
 def match_location_names_to_expenses_dict():
-    '''Scrapes expense data for each family composition in all counties and MSAs in a state
-    and add the name of each county or MSA as the main key
+    ''' Scrapes expense data for each family composition in all counties and MSAs 
+    in a state and adds the name of each county or MSA as the main key.
 
     Parameters
     ----------
@@ -534,13 +609,17 @@ def match_location_names_to_expenses_dict():
     -------
     nested dict
         main key is the area (either county or MSA)
+            (e.g. 'washtenaw county' or 'ann arbor, mi')
+
         values of each main key are as follows:
-            nested key no. 1 is the number of adults 
+            first nested key is the number of adults
                 (i.e. 'one adult', 'two adults (one working)', 'two adults (both working))
-            nested value no. 1 is number of children
+            first nested value is the number of children
                 (i.e. '0 children', '1 child', '2 children', '3 children')
-            nested key no. 2 is required annual income before taxes'
-            nested value no. 2 is expense values, e.g. '$80,850'
+            second nested key is the type of expense
+                (i.e. 'required annual income before taxes')
+            second nested value is the expense values in a float format in Python but consider it USD
+                (e.g. '27672', '52942', '64448', '81216')
     '''
     ## add area names to complete the dictionary
     combined_url_dict = build_combined_dict()
@@ -556,7 +635,7 @@ def match_location_names_to_expenses_dict():
 ############# populating database #############
 ###############################################
 def create_db():
-    ''' Create a SQL database if it doesn't already exist and populate data in the tables.
+    ''' Creates a SQL database if it doesn't already exist and populates data in the tables.
     If the database already exists, the function writes over the existing data.
     
     Parameters
@@ -616,8 +695,16 @@ def create_db():
 
 
 def load_areas():
-    '''
-    docstring
+    ''' Loads the dictionary of scraped data on areas (i.e. counties and MSAs) 
+    in Michigan into a SQL database.
+
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    None
     '''
     areas = match_location_names_to_expenses_dict()
     combined_url_dict = build_combined_dict()
@@ -649,8 +736,16 @@ def load_areas():
 
 
 def load_wages():
-    '''
-    docstring
+    ''' Loads the dictionary of scraped data on wages in all counties and MSAs
+    in Michigan into a SQL database.
+
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    None
     '''
     wages = match_location_names_to_wages_dict()
 
@@ -680,8 +775,17 @@ def load_wages():
 
 
 def load_expenses():
-    '''
-    docstring
+    ''' Loads the dictionary of scraped data on expenses (i.e. required 
+    annual income before taxes) in all counties and MSAs in Michigan 
+    into a SQL database.
+
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    None
     '''
     expenses = match_location_names_to_expenses_dict()
 
@@ -712,10 +816,22 @@ def load_expenses():
 ########### interact with database ###########
 ##############################################
 def access_sql_table(area_name, sql_table):
-    '''
+    ''' Accesses data of a given area (either a county or an MSA) from 
+    a specific table in the SQL database via a computer terminal.
+    
     Parameters
     ----------
-    String
+    area_name: string
+        a county (e.g. 'washtenaw county') or an MSA (e.g. 'ann arbor, mi')
+        in a lowercase format
+
+    sql_table: string
+        the name of a table in a SQL database
+    
+    Returns
+    -------
+    tuple
+        sql result
     '''
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -733,8 +849,18 @@ def access_sql_table(area_name, sql_table):
 
 
 def access_columns(sql_table):
-    '''
-    docstring
+    ''' Accesses the field/column names from a specific table 
+    in the SQL database via a computer terminal.
+    
+    Parameters
+    ----------
+    sql_table: string
+        the name of a table in a SQL database
+    
+    Returns
+    -------
+    list
+        field/column names of a given table
     '''
     conn = sqlite3.connect(DB_NAME)
     cur = conn.execute(f'SELECT * FROM {sql_table}')
@@ -744,7 +870,7 @@ def access_columns(sql_table):
 
 
 def pretty_print_query(raw_query_result):
-    ''' Pretty prints raw query result
+    ''' Pretty prints raw query result in a computer terminal
     
     Parameters
     ----------
@@ -754,7 +880,6 @@ def pretty_print_query(raw_query_result):
     Returns
     -------
     None
-        a python output in the form of a formatted table 
     '''
     ## Resource: http://zetcode.com/python/prettytable/
     pretty_table = PrettyTable()
@@ -769,10 +894,19 @@ def pretty_print_query(raw_query_result):
 
 
 def avg_living_wage(area_name):
-    '''
+    ''' Accesses wages data of a given area (either a county or an MSA) from 
+    the Wages tables in the SQL database via a computer terminal.
+    
     Parameters
     ----------
-    String
+    area_name: string
+        a county (e.g. 'washtenaw county') or an MSA (e.g. 'ann arbor, mi')
+        in a lowercase format
+    
+    Returns
+    -------
+    tuple
+        sql result
     '''
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -788,10 +922,19 @@ def avg_living_wage(area_name):
 
 
 def extract_one_adult_expenses(area_name):
-    '''
+    ''' Accesses expenses data for the '1 Adult' family composition of a given area 
+    (either a county or an MSA) from the Expenses tables in the SQL database via a computer terminal.
+    
     Parameters
     ----------
-    String
+    area_name: string
+        a county (e.g. 'washtenaw county') or an MSA (e.g. 'ann arbor, mi')
+        in a lowercase format
+    
+    Returns
+    -------
+    tuple
+        sql result
     '''
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -815,10 +958,19 @@ def extract_one_adult_expenses(area_name):
 
 
 def extract_two_adults_one_working_expenses(area_name):
-    '''
+    ''' Accesses expenses data for the '2 Adults (1 Working)' family composition of a given area 
+    (either a county or an MSA) from the Expenses tables in the SQL database via a computer terminal.
+    
     Parameters
     ----------
-    String
+    area_name: string
+        a county (e.g. 'washtenaw county') or an MSA (e.g. 'ann arbor, mi')
+        in a lowercase format
+    
+    Returns
+    -------
+    tuple
+        sql result
     '''
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -842,10 +994,19 @@ def extract_two_adults_one_working_expenses(area_name):
 
 
 def extract_two_adults_both_working_expenses(area_name):
-    '''
+    ''' Accesses expenses data for the '2 Adults (Both Working)' family composition of a given area 
+    (either a county or an MSA) from the Expenses tables in the SQL database via a computer terminal.
+    
     Parameters
     ----------
-    String
+    area_name: string
+        a county (e.g. 'washtenaw county') or an MSA (e.g. 'ann arbor, mi')
+        in a lowercase format
+    
+    Returns
+    -------
+    tuple
+        sql result
     '''
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -872,15 +1033,21 @@ def extract_two_adults_both_working_expenses(area_name):
 ################### plotly ###################
 ##############################################
 def plot_avg_gap(area_name):
-    ''' Display the gap between the average living wage of a chosen area
-    and the minimum wage of Michigan
+    ''' A plotly graph that displays the gap between the average living wage of 
+    the selected area (either a county or an MSA) and the minimum wage of Michigan 
+    as well as a caption that describes the calculated difference/gap will populate 
+    in a web browser.
+    
+    Parameters
+    ----------
+    area_name: string
+        a county (e.g. 'washtenaw county') or an MSA (e.g. 'ann arbor, mi')
+        in a lowercase format
+    
+    Returns
+    -------
+    None
     '''
-    # wages = access_columns("Wages")[-3:]
-    ## ['Living Wage', 'Poverty Wage', 'Minimum Wage']
-
-    # expenses = access_columns("Expenses")[-1]
-    ## Required Annual Income Before Taxes
-
     wage_types = ['Average Living Wage', 'Minimum Wage']
 
     avg_living_wage_tup = avg_living_wage(area_name)
@@ -921,16 +1088,23 @@ def plot_avg_gap(area_name):
 
 
 def plot_expenses(area_name):
-    ''' Display the expenses in a chosen area
+    ''' A plotly graph that displays the required annual income before taxes for 
+    each family composition in the selected area (either a county or an MSA)
+    will populate in a web browser.
+    
+    Parameters
+    ----------
+    area_name: string
+        a county (e.g. 'washtenaw county') or an MSA (e.g. 'ann arbor, mi')
+        in a lowercase format
+    
+    Returns
+    -------
+    None
     '''
-    # wages = access_columns("Wages")[-3:]
-    ## ['Living Wage', 'Poverty Wage', 'Minimum Wage']
-
-    # expenses = access_columns("Expenses")[-1]
-    ## Required Annual Income Before Taxes
     family_comp = ['1 Adult, No Child', '1 Adult, 1 Child', '1 Adult, 2 Children', '1 Adult, 3 Children',
-                '2 Adult (1 Working), No Child', '2 Adult (1 Working), 1 Child', '2 Adult (1 Working), 2 Children', '2 Adult (1 Working), 3 Children',
-                '2 Adult (Both Working), No Child', '2 Adult (Both Working), 1 Child', '2 Adult (Both Working), 2 Children', '2 Adult (Both Working), 3 Children']
+                '2 Adults (1 Working), No Child', '2 Adults (1 Working), 1 Child', '2 Adults (1 Working), 2 Children', '2 Adults (1 Working), 3 Children',
+                '2 Adults (Both Working), No Child', '2 Adults (Both Working), 1 Child', '2 Adults (Both Working), 2 Children', '2 Adults (Both Working), 3 Children']
 
     tup_1 = extract_one_adult_expenses(area_name)
     tup_2 = extract_two_adults_one_working_expenses(area_name)
@@ -956,80 +1130,6 @@ def plot_expenses(area_name):
     fig = go.Figure(data=bar_data, layout=basic_layout)
 
     return fig.show()
-
-
-##############################################
-############### cache functions ##############
-##############################################
-def open_cache():
-    ''' Opens the cache file if it exists and loads the JSON into
-    the CACHE_DICT dictionary.
-    If the cache file doesn't exist, creates a new cache dictionary
-    
-    Parameters
-    ----------
-    None
-    
-    Returns
-    -------
-    dict
-        The opened cache
-    '''
-    try:
-        cache_file = open(CACHE_FILENAME, 'r')
-        cache_contents = cache_file.read()
-        cache_dict = json.loads(cache_contents)
-        cache_file.close()
-    except:
-        cache_dict = {}
-    return cache_dict
-
-
-def save_cache(cache_dict):
-    ''' Saves the current state of the cache to disk
-    
-    Parameters
-    ----------
-    cache_dict: dict
-        The dictionary to save
-    
-    Returns
-    -------
-    None
-    '''
-    dumped_json_cache = json.dumps(cache_dict)
-    cache_file = open(CACHE_FILENAME,"w")
-    cache_file.write(dumped_json_cache)
-    cache_file.close()
-
-
-def make_request_with_cache(url, cache_dict):
-    '''Check the cache for a saved result for this baseurl+params:values
-    combo. If the result is found, return it. Otherwise send a new 
-    request, save it, then return it.
-    
-    Parameters
-    ----------
-    url: string
-        The URL with the data that you want to access
-    cache_dict: dict
-        A dictionary of param:value pairs
-    
-    Returns
-    -------
-    dict
-        the results of the query as a dictionary loaded from cache JSON
-    '''
-    if (url in cache_dict.keys()):
-        # print(f"CURRENTLY USING CACHE: {url}")
-        return cache_dict[url]
-    else:
-        # print(f"CURRENTLY FETCHING: {url}")
-        time.sleep(random.randint(5,10))
-        response = requests.get(url)
-        cache_dict[url] = response.text
-        save_cache(cache_dict)
-        return cache_dict[url]
 
 
 ##############################################
@@ -1153,3 +1253,5 @@ Enter one of the following:
             else:
                 print(f"\n[Error message]: Invalid input.")
                 break
+
+############## End of execution ##############
