@@ -17,7 +17,7 @@ This is Pisacha Wichianchan's final project for University of Michigan's SI 507 
 
 ## How to interact with the program:
 1) In your terminal, go to the folder in which the program file (i.e. living_wage.py) is in.
-2) Type in "python3 living_wage.py" to initiate the program.
+2) Enter in "python3 living_wage.py" to initiate the program.
 3) The program will generate a welcome message that describes the program's intent. Enter anything to continue or "exit" to leave the program.
 4) Upon entering something, the program will generate a list** of counties and MSAs in Michigan, each with an assigned number. Enter a specific number to learn more about the respective county or MSA, "back" to return to the welcome message, or "exit" to leave the program.
 5) Upon entering a valid number, the program will display a table** featuring the living wage, poverty wage, and minimum wage for each family composition in the selected county. The table will be displayed in the terminal.
