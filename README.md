@@ -23,4 +23,4 @@ This is Pisacha Wichianchan's final project for University of Michigan's SI 507 
 
 ** = A kind of presentation, such as displays or graphs.
 
-**Contact:** pisacha@umich.edu
+**Got questions?** Contact me at pisacha@umich.edu
