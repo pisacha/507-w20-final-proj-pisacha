@@ -2,6 +2,7 @@
 
 This is Pisacha Wichianchan's final project for University of Michigan's SI 507 (Winter 2020).
 
+
 ## Getting Started
 **Data source:** https://livingwage.mit.edu/states/26/locations
 
@@ -12,6 +13,7 @@ This is Pisacha Wichianchan's final project for University of Michigan's SI 507 
 **Purpose:** The program's target audiences (i.e. users) are scholars and professionals in public policy. Its main purpose is to encourage users to adopt the living wage approach in public policy analysis and management. For policymakers, this approach entails developing living wage policies for their constituents. Such policies could be raising the minimum wage to a living wage and/or implementing economic development initiatives to upskill workers for living-wage jobs.
 
 **Required pip installation:** Including but not limited to beautifulsoup4, requests, sqlite, plotly, and PrettyTable.
+
 
 ## How to interact with the program:
 1) In your terminal, go to the folder in which the program file (i.e. living_wage.py) is in.
