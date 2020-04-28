@@ -18,12 +18,9 @@ This is Pisacha Wichianchan's final project for University of Michigan's SI 507 
 3) The program will generates a welcome message that describes the program's intent. Enter anything to continue or 'exit' to leave the program.
 4) Upon entering something, the program will generate a list** of counties and MSAs in Michigan, each with an assigned number. Enter a specific number to learn more about the respective county or MSA, "back" to return to the welcome message, or "exit" to leave the program.
 5) Upon entering a valid number, the program will display a table** featuring the living wage, poverty wage, and minimum wage for each family composition in the selected county. The table will be displayed in the terminal.
-6) The user then has the option to enter "w"** for wages, "e"** for expenses, or "exit" to leave the program. 
-    If the user enters 'w', a plotly graph that displays the gap between the average living wage of a chosen area and the minimum wage of Michigan as well as a caption that captures that calculated difference/gap will populate in a web browser.
-    If the user enters 'e', ... .
-7) If the user enters either 'w' or 'e' in step 6, the terminal will ask the user to enter a specific number to learn more about a specific county or MSA, "back" to return to the welcome message, or "exit" to leave the program, like in step 4.
+6) The user then has the option to enter "w"** for wages, "e"** for expenses, or "exit" to leave the program. If the user enters 'w', a plotly graph that displays the gap between the average living wage of the selected area and the minimum wage of Michigan as well as a caption that captures that calculated difference/gap will populate in a web browser. If the user enters 'e', a plotly graph that displays the required annual income before taxes for each family composition in the selected area will populate in a web browser.
+7) If the user enters either 'w' or 'e' in step 6, the terminal will ask the user to enter a specific number to learn more about a specific county or MSA, "back" to return to the welcome message, or "exit" to leave the program, again, like in step 4.
 
 ** = A kind of presentation, such as displays or graphs.
 
-
-README is included in repo containing special requirements and required packages (including “None” if appropriate), as well as brief instructions for how to interact with your program.
+**Contact:** pisacha@umich.edu
