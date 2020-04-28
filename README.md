@@ -8,7 +8,7 @@ This is Pisacha Wichianchan's final project for University of Michigan's SI 507 
 
 **Structure:** I first set up a caching mechanism to avoid overloading the data source's server. I then scraped and crawled data and store it in a 3-table database -- in this process, the program automatically created a cache in the form of a JSON file. From this point on, every time the program proccesses data, it would read from the cache file rather than scraping and crawling anew. Under the "if name equals main" section, I called functions that process data from the created database. The user can select an area of interest (e.g. county or MSA) in Michigan to find information on the area's wages and expenses.
 
-**Purpose:** The program's target audiences (i.e. users) are scholars and professionals in public policy. Its purpose is to encourage users to adopt the living wage approach in public policy analysis and management. For policymakers, this approach entails developing living wage policies for their constituents. Such policies could be raising the minimum wage to a living wage and/or implementing economic development initiatives to upskill workers for living-wage jobs.
+**Purpose:** The program's target audiences (i.e. users) are scholars and professionals in public policy. Its main purpose is to encourage users to adopt the living wage approach in public policy analysis and management. For policymakers, this approach entails developing living wage policies for their constituents. Such policies could be raising the minimum wage to a living wage and/or implementing economic development initiatives to upskill workers for living-wage jobs.
 
 **Required pip installation:** Including but not limited to beautifulsoup4, requests, sqlite, plotly, and PrettyTable.
 
